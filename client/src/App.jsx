@@ -1,4 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate, Link, } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Link,
+} from "react-router-dom";
+
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Navbar from "./components/Navbar";
@@ -17,13 +24,23 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
+
+// HOME PAGE
+
+
 function Home() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="home-page">
+
+      {/* ================= HERO ================= */}
       <section className="hero-section">
+
         <div className="hero-content">
+
           <span className="hero-badge">
-            🔎 Smart Lost & Found System
+            🔎 SMART LOST & FOUND PLATFORM
           </span>
 
           <h1>
@@ -33,89 +50,354 @@ function Home() {
           </h1>
 
           <p>
-            Report lost items, share found items, and connect
-            with the right person through one simple platform.
+            Search lost and found reports, discover possible matches,
+            and reconnect people with their belongings through one
+            simple platform.
           </p>
 
           <div className="hero-actions">
-            <Link to="/report" className="hero-primary">
-              Report an Item
+
+            <Link to="/items" className="primary-button">
+              🔎 Browse Items
             </Link>
 
-            <Link to="/items" className="hero-secondary">
-              Browse Items
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/report" className="secondary-button">
+                + Report an Item
+              </Link>
+            ) : (
+              <Link to="/register" className="secondary-button">
+                Create an Account
+              </Link>
+            )}
+
           </div>
+
+          {!isAuthenticated && (
+            <p className="hero-note">
+              You can browse items without an account.
+              Login is required to report or claim an item.
+            </p>
+          )}
+
         </div>
 
+
+        {/* HERO VISUAL */}
         <div className="hero-visual">
-          <div className="floating-card card-one">
-            🔑
-            <span>Lost Keys</span>
+
+          <div className="hero-orb">
+
+            <div className="orb-icon">
+              🔎
+            </div>
+
+            <div className="orb-ring ring-one"></div>
+            <div className="orb-ring ring-two"></div>
+
           </div>
+
+
+          <div className="floating-card card-one">
+            <span>📱</span>
+            <div>
+              <strong>Lost Phone</strong>
+              <small>Possible match found</small>
+            </div>
+          </div>
+
 
           <div className="floating-card card-two">
-            🎒
-            <span>Found Bag</span>
+            <span>🎒</span>
+            <div>
+              <strong>Found Backpack</strong>
+              <small>Reported nearby</small>
+            </div>
           </div>
 
-          <div className="hero-icon">
-            🔍
+
+          <div className="floating-card card-three">
+            <span>✓</span>
+            <div>
+              <strong>Item Recovered</strong>
+              <small>Successfully returned</small>
+            </div>
           </div>
+
         </div>
+
       </section>
 
-      <section className="features-section">
-        <h2>How It Works</h2>
 
-        <p className="section-subtitle">
-          A simple process to report, search and recover items.
-        </p>
+      {/* ================= QUICK ACTIONS ================= */}
+      <section className="quick-actions-section">
+
+        <div className="quick-action-card">
+
+          <div className="quick-action-icon">
+            🔎
+          </div>
+
+          <div>
+            <h3>Looking for an item?</h3>
+            <p>
+              Search through reported lost and found items.
+            </p>
+          </div>
+
+          <Link to="/items" className="quick-action-link">
+            Browse →
+          </Link>
+
+        </div>
+
+
+        <div className="quick-action-card">
+
+          <div className="quick-action-icon">
+            📝
+          </div>
+
+          <div>
+            <h3>Lost or found something?</h3>
+            <p>
+              Create a report and help reconnect it.
+            </p>
+          </div>
+
+          <Link
+            to={isAuthenticated ? "/report" : "/login"}
+            className="quick-action-link"
+          >
+            {isAuthenticated ? "Report →" : "Login →"}
+          </Link>
+
+        </div>
+
+      </section>
+
+
+      {/* ================= HOW IT WORKS ================= */}
+      <section className="home-section">
+
+        <div className="section-heading">
+
+          <span>HOW IT WORKS</span>
+
+          <h2>
+            From Lost to Found in Simple Steps
+          </h2>
+
+          <p>
+            Everything you need to report, discover and recover
+            lost belongings.
+          </p>
+
+        </div>
+
 
         <div className="feature-grid">
-          <div className="feature-card">
-            <div className="feature-icon">📝</div>
-            <h3>Report</h3>
-            <p>
-              Report a lost or found item with important
-              details like location, category and date.
-            </p>
-          </div>
 
           <div className="feature-card">
-            <div className="feature-icon">🔎</div>
-            <h3>Search</h3>
+
+            <div className="feature-number">
+              01
+            </div>
+
+            <div className="feature-icon">
+              📝
+            </div>
+
+            <h3>
+              Report
+            </h3>
+
             <p>
-              Search and filter reported items to quickly
-              find a possible match.
+              Submit details about a lost or found item,
+              including its location, category and description.
             </p>
+
           </div>
 
+
           <div className="feature-card">
-            <div className="feature-icon">🤝</div>
-            <h3>Claim</h3>
+
+            <div className="feature-number">
+              02
+            </div>
+
+            <div className="feature-icon">
+              🔎
+            </div>
+
+            <h3>
+              Discover
+            </h3>
+
             <p>
-              Submit a claim request and track its status
-              through the reporting user.
+              Browse and search through reports using
+              keywords, categories, locations and status.
             </p>
+
           </div>
+
+
+          <div className="feature-card">
+
+            <div className="feature-number">
+              03
+            </div>
+
+            <div className="feature-icon">
+              🤝
+            </div>
+
+            <h3>
+              Claim
+            </h3>
+
+            <p>
+              Found your belongings? Submit a claim request
+              to the person who reported the found item.
+            </p>
+
+          </div>
+
+
+          <div className="feature-card">
+
+            <div className="feature-number">
+              04
+            </div>
+
+            <div className="feature-icon">
+              🔔
+            </div>
+
+            <h3>
+              Reconnect
+            </h3>
+
+            <p>
+              Receive smart notifications about possible
+              matches and claim decisions.
+            </p>
+
+          </div>
+
         </div>
+
       </section>
 
-      <section className="home-cta">
-        <h2>Ready to find your item?</h2>
 
-        <p>
-          Start by browsing the latest lost and found reports.
-        </p>
+      {/* ================= SMART MATCHING ================= */}
+      <section className="matching-section">
 
-        <Link to="/items" className="hero-primary">
-          Explore Items
-        </Link>
+        <div className="matching-visual">
+
+          <div className="matching-circle">
+
+            <div className="match-item match-lost">
+              🔍
+              <span>LOST</span>
+            </div>
+
+            <div className="match-line">
+              ✦
+            </div>
+
+            <div className="match-item match-found">
+              📦
+              <span>FOUND</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div className="matching-content">
+
+          <span className="hero-badge">
+            ✨ SMART MATCHING
+          </span>
+
+          <h2>
+            Lost and Found Reports Can Find Each Other
+          </h2>
+
+          <p>
+            Our matching system compares important item details
+            such as category, location, title, description and
+            date to identify possible Lost ↔ Found matches.
+          </p>
+
+          <div className="matching-points">
+
+            <span>✓ Category matching</span>
+            <span>✓ Location matching</span>
+            <span>✓ Description matching</span>
+            <span>✓ Date proximity</span>
+
+          </div>
+
+          <Link to="/items" className="primary-button">
+            Explore Reports →
+          </Link>
+
+        </div>
+
       </section>
+
+
+      {/* ================= FINAL CTA ================= */}
+      <section className="cta-section">
+
+        <div className="cta-content">
+
+          <span className="hero-badge">
+            GET STARTED
+          </span>
+
+          <h2>
+            Help an Item Find Its Way Home.
+          </h2>
+
+          <p>
+            Browse existing reports or create an account to
+            report a lost or found item.
+          </p>
+
+          <div className="hero-actions">
+
+            <Link to="/items" className="primary-button">
+              🔎 Browse Items
+            </Link>
+
+            {isAuthenticated ? (
+              <Link to="/report" className="secondary-button">
+                + Report Item
+              </Link>
+            ) : (
+              <Link to="/register" className="secondary-button">
+                Create Account
+              </Link>
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
     </div>
   );
 }
+
+
+// ======================================================
+// ROUTES
+// ======================================================
 
 function AppRoutes() {
   return (
@@ -123,12 +405,23 @@ function AppRoutes() {
       <Navbar />
 
       <Routes>
+
+        {/* PUBLIC */}
         <Route path="/" element={<Home />} />
+
+        <Route path="/items" element={<Items />} />
+
+        <Route
+          path="/items/:id"
+          element={<ItemDetails />}
+        />
 
         <Route path="/login" element={<Login />} />
 
         <Route path="/register" element={<Register />} />
 
+
+        {/* PROTECTED */}
         <Route
           path="/dashboard"
           element={
@@ -143,24 +436,6 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <ReportItem />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/items"
-          element={
-            <ProtectedRoute>
-              <Items />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/items/:id"
-          element={
-            <ProtectedRoute>
-              <ItemDetails />
             </ProtectedRoute>
           }
         />
@@ -183,21 +458,30 @@ function AppRoutes() {
           }
         />
 
+        {/* FALLBACK */}
         <Route
           path="*"
           element={<Navigate to="/" replace />}
         />
+
       </Routes>
     </>
   );
 }
 
+
+// ======================================================
+// APP
+// ======================================================
+
 function App() {
   return (
     <BrowserRouter>
+
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
+
     </BrowserRouter>
   );
 }

@@ -3,7 +3,7 @@ const express = require("express");
 const {
   createClaim,
   getMyClaims,
-  getItemClaims,
+  getClaimsForItem,
   updateClaimStatus,
 } = require("../controllers/claimController");
 
@@ -18,7 +18,7 @@ router.post("/", protect, createClaim);
 router.get("/my", protect, getMyClaims);
 
 // Get claims for an item reported by logged-in user
-router.get("/item/:itemId", protect, getItemClaims);
+router.get("/item/:itemId", protect, getClaimsForItem);
 
 // Approve or reject a claim
 router.put("/:id", protect, updateClaimStatus);

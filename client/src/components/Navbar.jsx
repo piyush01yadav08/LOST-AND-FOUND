@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -27,6 +28,7 @@ function Navbar() {
             <Link to="/my-reports">My Reports</Link>
           </>
         )}
+        {isAuthenticated && <NotificationBell />}
 
         {isAuthenticated ? (
           <>

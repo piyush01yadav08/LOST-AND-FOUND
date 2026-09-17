@@ -1,7 +1,11 @@
 const Claim = require("../models/Claim");
 const Item = require("../models/Item");
+const Notification = require("../models/Notification");
+
 
 // Create Claim
+
+
 const createClaim = async (req, res) => {
   try {
     const { itemId, message } = req.body;
@@ -20,24 +24,28 @@ const createClaim = async (req, res) => {
       });
     }
 
+    // Only Found items can be claimed
     if (item.type !== "Found") {
       return res.status(400).json({
         message: "Only found items can be claimed",
       });
     }
 
+    // Only active items can be claimed
     if (item.status !== "Active") {
       return res.status(400).json({
         message: "This item is no longer available for claiming",
       });
     }
 
+    // Prevent reporter from claiming their own item
     if (item.reportedBy.toString() === req.user.toString()) {
       return res.status(400).json({
         message: "You cannot claim your own item",
       });
     }
 
+    // Prevent duplicate pending claims
     const existingClaim = await Claim.findOne({
       item: itemId,
       claimant: req.user,
@@ -50,21 +58,30 @@ const createClaim = async (req, res) => {
       });
     }
 
+    // Create claim
     const claim = await Claim.create({
       item: itemId,
       claimant: req.user,
       message,
     });
 
-    const populatedClaim = await Claim.findById(claim._id)
-      .populate("claimant", "name email")
-      .populate("item", "title type status");
+    // Notify item reporter
+    await Notification.create({
+      user: item.reportedBy,
+      type: "CLAIM",
+      title: "New Claim Request",
+      message: `Someone has submitted a claim for your item "${item.title}".`,
+      item: item._id,
+      claim: claim._id,
+    });
 
     res.status(201).json({
-      message: "Claim request submitted successfully",
-      claim: populatedClaim,
+      message: "Claim submitted successfully",
+      claim,
     });
   } catch (error) {
+    console.error("Create claim error:", error);
+
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -72,13 +89,16 @@ const createClaim = async (req, res) => {
   }
 };
 
-// Get claims submitted by current user
+
+// Get My Claims
+
+
 const getMyClaims = async (req, res) => {
   try {
     const claims = await Claim.find({
       claimant: req.user,
     })
-      .populate("item", "title type location status")
+      .populate("item")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -86,6 +106,8 @@ const getMyClaims = async (req, res) => {
       claims,
     });
   } catch (error) {
+    console.error("Get my claims error:", error);
+
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -93,8 +115,11 @@ const getMyClaims = async (req, res) => {
   }
 };
 
-// Get claims for an item reported by current user
-const getItemClaims = async (req, res) => {
+// ======================================================
+// Get Claims For Item
+// ======================================================
+
+const getClaimsForItem = async (req, res) => {
   try {
     const item = await Item.findById(req.params.itemId);
 
@@ -104,9 +129,10 @@ const getItemClaims = async (req, res) => {
       });
     }
 
+    // Only item reporter can view claims
     if (item.reportedBy.toString() !== req.user.toString()) {
       return res.status(403).json({
-        message: "You can only view claims for your own reports",
+        message: "You can only view claims for your own items",
       });
     }
 
@@ -114,7 +140,6 @@ const getItemClaims = async (req, res) => {
       item: req.params.itemId,
     })
       .populate("claimant", "name email")
-      .populate("item", "title type status")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -122,6 +147,8 @@ const getItemClaims = async (req, res) => {
       claims,
     });
   } catch (error) {
+    console.error("Get item claims error:", error);
+
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -129,7 +156,10 @@ const getItemClaims = async (req, res) => {
   }
 };
 
-// Approve or Reject Claim
+// ======================================================
+// Approve / Reject Claim
+// ======================================================
+
 const updateClaimStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -140,7 +170,9 @@ const updateClaimStatus = async (req, res) => {
       });
     }
 
-    const claim = await Claim.findById(req.params.id).populate("item");
+    const claim = await Claim.findById(req.params.id)
+      .populate("item")
+      .populate("claimant", "name email");
 
     if (!claim) {
       return res.status(404).json({
@@ -148,50 +180,97 @@ const updateClaimStatus = async (req, res) => {
       });
     }
 
-    if (
-      claim.item.reportedBy.toString() !== req.user.toString()
-    ) {
+    const item = claim.item;
+
+    // Only item reporter can approve/reject
+    if (item.reportedBy.toString() !== req.user.toString()) {
       return res.status(403).json({
-        message: "Only the item reporter can approve or reject claims",
+        message: "Only the item reporter can update this claim",
       });
     }
 
+    // Prevent changing an already processed claim
     if (claim.status !== "Pending") {
       return res.status(400).json({
-        message: "This claim has already been processed",
+        message: `This claim has already been ${claim.status.toLowerCase()}`,
       });
     }
 
-    claim.status = status;
-    await claim.save();
+   
+    // APPROVE CLAIM
+    
 
-    // If approved, mark item as claimed
     if (status === "Approved") {
-      claim.item.status = "Claimed";
-      await claim.item.save();
+      claim.status = "Approved";
+      await claim.save();
 
-      // Reject other pending claims for the same item
-      await Claim.updateMany(
-        {
-          item: claim.item._id,
-          _id: { $ne: claim._id },
-          status: "Pending",
-        },
-        {
-          $set: { status: "Rejected" },
-        }
-      );
+      // Mark item as claimed
+      item.status = "Claimed";
+      await item.save();
+
+      // Notify claimant
+      await Notification.create({
+        user: claim.claimant._id,
+        type: "CLAIM_APPROVED",
+        title: "Claim Approved",
+        message: `Your claim for "${item.title}" has been approved.`,
+        item: item._id,
+        claim: claim._id,
+      });
+
+      // Reject all other pending claims for this item
+      const otherClaims = await Claim.find({
+        item: item._id,
+        _id: { $ne: claim._id },
+        status: "Pending",
+      });
+
+      for (const otherClaim of otherClaims) {
+        otherClaim.status = "Rejected";
+        await otherClaim.save();
+
+        // Notify rejected claimant
+        await Notification.create({
+          user: otherClaim.claimant,
+          type: "CLAIM_REJECTED",
+          title: "Claim Rejected",
+          message: `Your claim for "${item.title}" was not approved because another claim was accepted.`,
+          item: item._id,
+          claim: otherClaim._id,
+        });
+      }
+
+      return res.json({
+        message: "Claim approved successfully",
+        claim,
+        item,
+      });
     }
 
-    const updatedClaim = await Claim.findById(claim._id)
-      .populate("claimant", "name email")
-      .populate("item", "title type status");
+   
+    // REJECT CLAIM
+    
+
+    claim.status = "Rejected";
+    await claim.save();
+
+    // Notify claimant
+    await Notification.create({
+      user: claim.claimant._id,
+      type: "CLAIM_REJECTED",
+      title: "Claim Rejected",
+      message: `Your claim for "${item.title}" has been rejected.`,
+      item: item._id,
+      claim: claim._id,
+    });
 
     res.json({
-      message: `Claim ${status.toLowerCase()} successfully`,
-      claim: updatedClaim,
+      message: "Claim rejected successfully",
+      claim,
     });
   } catch (error) {
+    console.error("Update claim status error:", error);
+
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -202,6 +281,6 @@ const updateClaimStatus = async (req, res) => {
 module.exports = {
   createClaim,
   getMyClaims,
-  getItemClaims,
+  getClaimsForItem,
   updateClaimStatus,
 };
